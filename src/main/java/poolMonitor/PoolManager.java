@@ -1,4 +1,4 @@
-package pool;
+package poolMonitor;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -24,7 +24,7 @@ public class PoolManager {
             }
         }
         /**
-         * Acción de coger una de las conexiones disponibles en el pool.
+         * Acción de coger una de las conexiones disponibles en el poolJDBC.
          * @return instancia de conexion a la BD
          */
         public synchronized Connection getConnection(){

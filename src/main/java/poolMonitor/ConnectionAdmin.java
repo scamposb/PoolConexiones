@@ -1,4 +1,4 @@
-package pool;
+package poolMonitor;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
