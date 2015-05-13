@@ -15,7 +15,7 @@ public class DAOtest {
 
     private void pruebaConcurrencia(){
         try {
-            PoolManager pm = PoolManager.inicializar();
+            PoolManager pm = PoolManager.getInstance();
             Connection con = pm.getConnection();
             String queryString = "select nombre from persona where publicante_uuid=?";
             PreparedStatement preparedStatement = con.prepareStatement(queryString);
@@ -27,7 +27,7 @@ public class DAOtest {
             else{
                 System.out.printf("nada");
             }
-            pm = PoolManager.inicializar();
+            pm = PoolManager.getInstance();
             con = pm.getConnection();
             queryString = "select nombre from persona where publicante_uuid=?";
             preparedStatement = con.prepareStatement(queryString);
@@ -39,7 +39,7 @@ public class DAOtest {
             else{
                 System.out.printf("nada");
             }
-            pm = PoolManager.inicializar();
+            pm = PoolManager.getInstance();
             con = pm.getConnection();
             queryString = "select nombre from persona where publicante_uuid=?";
             preparedStatement = con.prepareStatement(queryString);
@@ -58,7 +58,7 @@ public class DAOtest {
     }
     private void pruebaBuena(){
         try {
-            PoolManager pm = PoolManager.inicializar();
+            PoolManager pm = PoolManager.getInstance();
             Connection con = pm.getConnection();
             String queryString = "select nombre from persona where publicante_uuid=?";
             PreparedStatement preparedStatement = con.prepareStatement(queryString);
@@ -70,7 +70,7 @@ public class DAOtest {
             else{
                 System.out.printf("nada");
             }
-            con.close();
+            pm.returnConnection(con);
         } catch (SQLException e) {
             e.printStackTrace();
             System.out.println("nada");
@@ -78,7 +78,7 @@ public class DAOtest {
     }
     public static void main (String [] args){
         DAOtest d = new DAOtest();
-        d.pruebaBuena();
-//        d.pruebaConcurrencia();
+//        d.pruebaBuena();
+        d.pruebaConcurrencia();
     }
 }

@@ -6,6 +6,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Pool de conexiones en MySQL
@@ -13,61 +14,68 @@ import java.util.List;
  * @author Sandra Campos
  */
 public class PoolManager {
-        /*
-         * Atributos de la clase
-         */
-        private static List<Connection> conexiones;		//numero de conexiones disponibles
-        private static boolean inicializado = false;
-        private static PoolManager instancia = new PoolManager();
+    /*
+     * Atributos de la clase
+     */
+    private static boolean inicializado = false;
+    private static PoolManager instancia = new PoolManager();
+    private static final int maxConexiones = 16;
+    private static AtomicInteger numConexiones;
+
+    static {
+        numConexiones = new AtomicInteger(0);
+    }
 
 
-        /**
-         * Constructor vacio y privado para que nadie pueda acceder a el,
-         * convencion del patron Singleton
-         */
-        private PoolManager(){}
+    /**
+     * Constructor vacio y privado para que nadie pueda acceder a el,
+     * convencion del patron Singleton
+     */
+    private PoolManager() {
+    }
 
-        /**
-         * En caso de que el array ya este inicializado, no se hara nada.
-         * Aseguramos de esta forma que las instancias se creen una sola vez
-         * @return instancia del pool manager a manejar, convencion del patron
-         * singleton
-         */
-        public static PoolManager inicializar() throws SQLException{
-            if(!inicializado){
-                conexiones = new ArrayList<Connection>();
-                for(int i=0; i<2;i++){
-                    conexiones.add(ConnectionAdmin.getConnection());
-                }
-                inicializado = true;
+
+    /**
+     *
+     * @return instancia del pool manager a manejar, convencion del patron
+     * singleton
+     */
+    public static PoolManager getInstance()  {
+        return instancia;
+    }
+
+    /**
+     * Acción de coger una de las conexiones disponibles en el poolJDBC.
+     *
+     * @return instancia de conexion a la BD
+     */
+    public synchronized Connection getConnection() {
+        while (numConexiones.get() >= maxConexiones) {
+            try {
+                wait();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
-            return instancia;
         }
-        /**
-         * Acción de coger una de las conexiones disponibles en el poolJDBC.
-         * @return instancia de conexion a la BD
-         */
-        public synchronized Connection getConnection(){
-            while(conexiones.isEmpty()){
-                try{
-                    wait();
-                }
-                catch(InterruptedException e){
-                    e.printStackTrace();
-                }
-            }
-            /* Hay al menos un recurso liberado, devolvemos instancia */
-            Connection conexion = conexiones.get(0);
-            conexiones.remove(0);
-            return conexion;
+        try{
+            numConexiones.getAndIncrement();
+            return ConnectionAdmin.getConnection();
+        }catch(SQLException e){
+            return null;
         }
-        /**
-         * Devolvemos la conexion al array de recursos liberados
-         * @param conexion conexion a la BD que queremos liberar
-         */
-        public synchronized void returnConnection(Connection conexion) {
-            conexiones.add(conexion);
+    }
+
+    /**
+     * Devolvemos la conexion al array de recursos liberados
+     *
+     * @param conexion conexion a la BD que queremos liberar
+     */
+    public synchronized void returnConnection(Connection conexion) {
+        try{
+            conexion.close();
+            numConexiones.decrementAndGet();
             notifyAll();    //avisamos a todos los threads de la devolucion
-        }
+        }catch(SQLException e){}
+    }
 
 }
